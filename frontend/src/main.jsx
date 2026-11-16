@@ -1,0 +1,2 @@
+import React from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css'; import 'bootstrap-icons/font/bootstrap-icons.css'; import './styles.css'; import './theme.css'; import {createRoot} from 'react-dom/client';import {BrowserRouter} from 'react-router-dom';import {AuthProvider} from './context/AuthContext';import App from './App';createRoot(document.getElementById('root')).render(<BrowserRouter><AuthProvider><App/></AuthProvider></BrowserRouter>);

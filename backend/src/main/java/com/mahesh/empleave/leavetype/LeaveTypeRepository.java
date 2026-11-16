@@ -1,0 +1,1 @@
+package com.mahesh.empleave.leavetype;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface LeaveTypeRepository extends JpaRepository<LeaveType,Long>{Optional<LeaveType> findByNameAndActiveTrue(String name);}

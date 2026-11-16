@@ -1,0 +1,93 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 2087 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+(DEMO HR LEAVE POLICY - FOR SOFTWARE TESTING ONLY) Tj
+0 -16 Td
+(This fictional document is test data for the AI Employee Leave Management System.) Tj
+0 -16 Td
+(It is not an actual company policy and creates no employment rights.) Tj
+0 -16 Td
+0 -16 Td
+(1. Leave types) Tj
+0 -16 Td
+(The demo system currently configures Annual Leave and Sick Leave as active leave types.) Tj
+0 -16 Td
+(Leave types are configured by an administrator and may vary by deployment.) Tj
+0 -16 Td
+0 -16 Td
+(2. Eligibility and balances) Tj
+0 -16 Td
+(The test employee has a demo entitlement of 20 Annual Leave days.) Tj
+0 -16 Td
+(The application reads the authenticated employee balance from the system database.) Tj
+0 -16 Td
+(The application rejects balance debits when the remaining balance is insufficient.) Tj
+0 -16 Td
+0 -16 Td
+(3. Applying for leave) Tj
+0 -16 Td
+(Employees submit a leave type, start date, end date, and reason.) Tj
+0 -16 Td
+(Dates cannot be in the past, the end date cannot precede the start date,) Tj
+0 -16 Td
+(overlapping requests are rejected, and a request must include a working day.) Tj
+0 -16 Td
+(Working days exclude Saturdays, Sundays, and configured company holidays.) Tj
+0 -16 Td
+0 -16 Td
+(4. Approval and cancellation) Tj
+0 -16 Td
+(A submitted request starts with PENDING status.) Tj
+0 -16 Td
+(A manager may review a direct report request; an administrator may review requests.) Tj
+0 -16 Td
+(The AI assistant cannot approve or reject leave requests.) Tj
+0 -16 Td
+(Employees may cancel their own pending request. Future approved leave may be cancelled) Tj
+0 -16 Td
+(and its balance is restored by the normal application service.) Tj
+0 -16 Td
+0 -16 Td
+(5. AI assistant safety) Tj
+0 -16 Td
+(Policy answers must use uploaded policy evidence and include source page citations.) Tj
+0 -16 Td
+(If the uploaded policies do not contain evidence, the assistant must say so.) Tj
+0 -16 Td
+(Leave submission requires explicit confirmation of the exact request details.) Tj
+0 -16 Td
+(The assistant cannot execute arbitrary SQL or directly modify balances.) Tj
+0 -16 Td
+ET
+
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2450
+%%EOF

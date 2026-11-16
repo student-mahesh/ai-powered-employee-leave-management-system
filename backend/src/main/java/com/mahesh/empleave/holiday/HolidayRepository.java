@@ -1,0 +1,1 @@
+package com.mahesh.empleave.holiday;import org.springframework.data.jpa.repository.JpaRepository;import java.time.*;import java.util.*;public interface HolidayRepository extends JpaRepository<Holiday,Long>{List<Holiday> findByHolidayDateBetween(LocalDate a,LocalDate b);}

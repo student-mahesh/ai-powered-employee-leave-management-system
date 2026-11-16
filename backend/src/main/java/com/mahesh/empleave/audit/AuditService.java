@@ -1,0 +1,1 @@
+package com.mahesh.empleave.audit;import com.mahesh.empleave.user.*;import lombok.*;import org.springframework.stereotype.*;@Service @RequiredArgsConstructor public class AuditService{private final AuditLogRepository repo;public void log(AppUser actor,String action,String type,Long id){repo.save(new AuditLog(actor,action,type,id));}}

@@ -1,0 +1,25 @@
+spring:
+  config:
+    activate:
+      on-profile: frontend-test
+  datasource:
+    url: ${FRONTEND_TEST_DB_URL}
+    username: ${FRONTEND_TEST_DB_USER}
+    password: ${FRONTEND_TEST_DB_PASSWORD}
+  flyway:
+    enabled: ${FRONTEND_TEST_FLYWAY_ENABLED:false}
+    url: ${FRONTEND_TEST_FLYWAY_DB_URL}
+    user: ${FRONTEND_TEST_FLYWAY_DB_USER}
+    password: ${FRONTEND_TEST_FLYWAY_DB_PASSWORD}
+  ai:
+    chroma-url: http://127.0.0.1:8001
+    ollama:
+      base-url: http://127.0.0.1:11434
+server:
+  port: 8081
+app:
+  jwt:
+    secret: ${FRONTEND_TEST_JWT_SECRET}
+  cors-origin: http://127.0.0.1:5175
+  seed-admin:
+    enabled: false
