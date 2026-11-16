@@ -1,59 +1,247 @@
 # AI-Powered Employee Leave Management System
 
-An interview-friendly Java full-stack HR leave system. It provides JWT-protected employee, manager, and HR flows; auditable leave approval; operational dashboards; and a pluggable local AI assistant boundary.
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.5-brightgreen)
+![React](https://img.shields.io/badge/React-Vite-61dafb)
+![MySQL](https://img.shields.io/badge/MySQL-8-blue)
+![License](https://img.shields.io/badge/license-not%20specified-lightgrey)
 
-## Delivered vertical slice
+An interview-friendly HR leave-management application with role-aware employee, manager, and administrator workflows. Leave requests, balances, approvals, audit records, notifications, and configuration are persisted in MySQL. An optional local Spring AI/Ollama assistant provides cited answers from uploaded HR policy PDFs.
 
-- Login / current-user session and role-based UI navigation.
-- Admin configuration for departments, leave types, holidays, employee creation and employee-manager assignment.
-- Department and employee administration APIs, leave balances, holiday-aware working-day calculations, conflict checks, approval/rejection/cancellation, audit records and notifications.
-- MySQL schema and sample seed, Swagger, Docker Compose, CI, unit tests, and a functional React dashboard/apply/history/approval interface.
-- AI policy assistant supports admin PDF upload, PDF extraction/chunking, Ollama embeddings, reliable ChromaDB indexing/query, cited per-user chat history, authenticated balance/history/holiday tools, confirmation-gated leave submission, and admin policy reindexing. Ollama and ChromaDB must be running for live AI answers; AI cannot approve or reject leave.
+> **Data-safety notice:** This repository is intended for development and portfolio use. Never point schema scripts, migrations, seed configuration, or test workflows at an existing deployment without a reviewed backup and change plan.
 
-## Run locally
+## Overview
 
-1. Copy `.env.example` to `.env`, set the required values, and start MySQL with `docker compose up -d mysql`. Docker Compose reads `.env`; for a direct Spring Boot launch, provide the same variables through the shell or IDE because Spring Boot does not load `.env` automatically. The application uses only the `aiemployeeleavemanagementsystem` database. Do not configure it to use or alter `employeeleavemanagementsystem`.
-2. `cd backend; mvn spring-boot:run`.
-3. `cd frontend; npm install; npm run dev`.
-4. Open `http://127.0.0.1:5175`; Swagger is at `http://127.0.0.1:8080/swagger-ui/index.html`.
+LeaveFlow is a modular monolith consisting of a React/Vite client and a Spring Boot REST API. MySQL is the operational source of truth. ChromaDB stores only policy-document vectors; Ollama supplies chat and embedding models for the optional policy assistant.
 
-The first admin comes from `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD`; do not retain its example values outside local development.
+## Key features
 
-For Docker Compose, copy `.env.example` to `.env`, provide the required database and JWT values, then run `docker compose up --build`. Docker exposes the frontend on `5175`, backend on `8080`, MySQL on `3306`, ChromaDB on host port `8001` (container port `8000`), and Ollama on `11434`. The Docker backend connects to ChromaDB as `http://chroma:8000`; host-local development uses the verified ChromaDB 1.5.9 setup at `http://127.0.0.1:8001`. Docker's ChromaDB 0.6.3 RAG compatibility with this backend is unverified.
+### Employee
+
+- JWT login, current-user session handling, profile access, role-aware navigation, and BCrypt password storage.
+- Apply for leave with weekend/holiday-aware working-day calculation and overlap checks.
+- View leave history, current balances, balance transactions, notifications, and personal dashboard data.
+- Cancel eligible pending or pre-start approved requests.
+
+### Manager
+
+- View and review requests from directly assigned employees only.
+- Approve or reject requests with transactional balance accounting and audit records.
+- View team leave activity and manager dashboard data without bypassing direct-report checks.
+
+### Administrator
+
+- Configure departments, leave types, holidays, employees, manager assignments, and entitlements.
+- Review leave activity, reports, audit records, notifications, and all employee balances.
+- Upload policy PDFs, list policy documents, and run idempotent policy reindexing.
+
+### AI Assistant
+
+- Answer policy questions using cited PDF evidence retrieved through ChromaDB.
+- Use authenticated MySQL-backed tools for personal balance, leave-history, and holiday questions.
+- Support deterministic, conversation-bound leave submission confirmation (`YES` submits; `NO` cancels).
+- Keep policy ingestion page-aware and preserve private per-user chat history.
+- AI cannot approve/reject leave, alter balances/roles/permissions, or execute SQL.
+
+## Technology stack
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | React, Vite, React Router, Bootstrap 5, Context API, Axios |
+| Backend | Java 21, Spring Boot 3.4.5, Spring Security, JWT, JPA/Hibernate, Validation, Lombok, Mail |
+| Database | MySQL 8; Flyway migrations; `aiemployeeleavemanagementsystem` schema |
+| AI/RAG | Spring AI, Ollama (`llama3.2`, `nomic-embed-text`), ChromaDB |
+| Tooling | Maven, npm, Docker Compose, springdoc OpenAPI, Vitest/RTL |
 
 ## Architecture
 
-React -> Axios/JWT -> Spring REST services -> MySQL. Spring AI is an adapter boundary configured via environment, while leave policy and authorization stay in Java services. ChromaDB is reserved for uploaded policy chunks, not HR data.
+```mermaid
+flowchart LR
+  Browser[React/Vite frontend] -->|Axios + JWT| API[Spring Boot REST API]
+  API --> DB[(MySQL operational data)]
+  API --> Ollama[Ollama chat + embeddings]
+  API --> Chroma[(ChromaDB policy vectors)]
+  API --> SMTP[Optional SMTP]
+```
+
+```mermaid
+flowchart TD
+  PDF[Admin uploads policy PDF] --> Extract[PDFBox page extraction]
+  Extract --> Chunk[Policy chunking]
+  Chunk --> MySQL[(Policy documents/chunks + source metadata)]
+  Chunk --> Embed[Ollama embedding model]
+  Embed --> Chroma[hr_policy collection]
+  Question[Authenticated question] --> Retrieve[Chroma similarity search]
+  Retrieve --> Resolve[Resolve chunk IDs and source pages in MySQL]
+  Resolve --> Prompt[Evidence-constrained Spring AI prompt]
+  Prompt --> Answer[Cited response]
+```
+
+## Project structure
+
+```text
+.
+├── backend/
+│   ├── src/main/java/com/mahesh/empleave/
+│   │   ├── ai/              # policy ingestion, retrieval, chat, AI tools
+│   │   ├── auth/            # login, registration, JWT-facing endpoints
+│   │   ├── employee/        # employee administration and profiles
+│   │   ├── leave/           # applications, approval, cancellation
+│   │   ├── leavebalance/    # balances and accounting ledger
+│   │   ├── department/      # departments and assignments
+│   │   ├── holiday/         # company holidays
+│   │   ├── notification/    # user notifications
+│   │   ├── audit/           # audit records
+│   │   ├── report/          # leave reports and trends
+│   │   ├── dashboard/       # role-aware dashboard data
+│   │   ├── security/        # Spring Security and JWT filter
+│   │   └── common/          # shared DTOs and infrastructure
+│   ├── src/main/resources/db/migration/
+│   └── src/test/
+├── frontend/src/            # pages, components, contexts, layouts, services
+├── database/schema.sql      # reference schema for a new local database
+├── docs/                    # project and user documentation
+├── .github/workflows/ci.yml
+├── .env.example
+└── docker-compose.yml
+```
+
+## Local setup
+
+### Prerequisites
+
+- Java 21 and Maven
+- Node.js/npm
+- MySQL 8 with the `aiemployeeleavemanagementsystem` database
+- Ollama with `llama3.2` and `nomic-embed-text` for live AI/RAG
+- ChromaDB 1.5.9 for the verified local policy-vector setup
+
+### Environment variables
+
+Copy `.env.example` to an untracked local `.env` and replace every placeholder with local values. Spring Boot does not load `.env` automatically when launched directly; provide these variables through your shell or IDE. Docker Compose reads `.env`.
+
+Required for the backend include `MYSQL_PASSWORD`, `MIGRATION_DB_PASSWORD`, and `JWT_SECRET`. Configure `MYSQL_DATABASE=aiemployeeleavemanagementsystem` and do not use the unrelated `employeeleavemanagementsystem` database. SMTP variables are optional. `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` are used only when the existing admin-seed switch is enabled.
+
+The frontend uses `VITE_API_BASE_URL` and defaults to `http://localhost:8080/api`.
+
+### Start local services
+
+The verified local ChromaDB setup uses a machine-local persistent directory and host port 8001:
+
+```powershell
+ollama serve
+ollama pull llama3.2
+ollama pull nomic-embed-text
+
+chroma.exe run --path $env:CHROMA_PERSISTENT_DIR --host 127.0.0.1 --port 8001
+```
+
+Then start the application:
+
+```powershell
+docker compose up -d mysql
+
+cd backend
+mvn -B spring-boot:run
+```
+
+In another terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open the frontend at `http://127.0.0.1:5175`. The backend listens on port 8080. Swagger is available at `http://127.0.0.1:8080/swagger-ui/index.html` (and `/swagger-ui.html`).
+
+## Docker Compose
+
+From the repository root, copy `.env.example` to `.env`, set the required database and JWT values, then run:
+
+```powershell
+docker compose up --build
+```
+
+| Service | Host port | Container port / URL |
+| --- | ---: | --- |
+| Frontend | 5175 | container HTTP port 80 |
+| Backend | 8080 | 8080 |
+| MySQL | 3306 | 3306 |
+| ChromaDB | 8001 | 8000; backend uses `http://chroma:8000` |
+| Ollama | 11434 | 11434 |
+
+The Docker backend must use service names (`mysql`, `chroma`, and `ollama`) rather than `localhost`. The local verified setup uses ChromaDB 1.5.9 at `http://127.0.0.1:8001`. The Compose image is `chromadb/chroma:0.6.3`; compatibility of that image with this backend's Chroma V2 API has not been verified, so Docker RAG should not be treated as validated.
+
+## AI assistant and RAG
+
+Administrators upload policy PDFs with `POST /api/ai/policies`. PDFBox extracts page text, the ingestion service chunks it, Ollama generates 768-dimensional `nomic-embed-text` embeddings, and vectors are stored in the `hr_policy` Chroma collection. MySQL stores document metadata, chunks, page/source mappings, conversations, and vector IDs. `POST /api/ai/policies/{id}/reindex` repairs indexing for an existing document without recreating it.
+
+Policy questions use retrieved evidence and return citations such as `file.pdf#page-3`. Personal balance, leave-history, and holiday questions use authenticated MySQL-backed tools; identity is derived from Spring Security, never from an employee ID supplied by the model. The assistant cannot approve/reject leave, alter balances/roles/permissions, or execute SQL. Pending leave submission uses a deterministic, conversation-bound confirmation flow (`YES` submits and `NO` cancels).
+
+Live AI answers require reachable Ollama and ChromaDB plus an uploaded policy document. Missing or inconsistent indexing is reported separately from genuine insufficient policy evidence.
+
+Google OAuth is optional for local JWT-based operation. If enabled, configure Google credentials and the callback path `/login/oauth2/code/google` in Google Cloud and provide the corresponding environment variables. OAuth and live external integrations are not verified by the repository's unit-test suite.
+
+## Main APIs
+
+All secured endpoints require the JWT returned by `POST /api/auth/login`.
+
+| Area | Endpoints |
+| --- | --- |
+| Authentication | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/register` |
+| Employees/departments | `/api/employees`, `/api/employees/me`, `/api/departments` |
+| Leave configuration | `/api/leave-types`, `/api/leave-balances`, `/api/leave-balances/history` |
+| Leave workflow | `POST /api/leaves`, `GET /api/leaves/my`, `PUT /api/leaves/{id}/approve`, `reject`, `cancel` |
+| Reports/dashboards | `/api/reports/*`, `/api/dashboard/*` |
+| Notifications/audit | `/api/notifications/*`, `/api/audit-logs` |
+| Policy and AI | `POST /api/ai/policies`, `GET /api/ai/policies`, `POST /api/ai/policies/{id}/reindex`, `POST /api/ai/chat`, `/api/ai/conversations/**` |
+
+API errors use a consistent timestamp/status/error/message/fields response shape. Swagger is the authoritative interactive API reference when the backend is running.
+
+## Security and privacy
+
+- Roles are `EMPLOYEE`, `MANAGER`, and `ADMIN`; employee-owned operations derive identity from the authenticated JWT principal.
+- Managers are restricted to their direct reports; self-review is prohibited.
+- Passwords are BCrypt-encoded and never returned in DTOs. JWT secrets, passwords, tokens, API keys, and SMTP credentials must remain in local environment configuration.
+- Never commit `.env`, database dumps/backups, logs, ChromaDB persistent data, `node_modules`, `target`, `dist`, or generated artifacts.
+- Do not publish personal employee data, real credentials, or production URLs in documentation.
+
+## Database integrity and safe operations
+
+MySQL is the operational source of truth. Flyway migrations are append-only, balances use transactional locking/versioning, and approval/cancellation accounting is idempotent and auditable. Policy vectors remain in ChromaDB and map back to MySQL policy chunks.
+
+Use a restricted database account for existing deployments. Keep Hibernate on `validate`, disable Flyway and admin seeding unless a reviewed change explicitly requires them, and take/verify a recoverable backup before any workflow that writes test data. Do not run `database/schema.sql` against an existing deployment, and never drop, truncate, reset, or switch to `employeeleavemanagementsystem`.
 
 ## Testing
 
-`mvn test` runs backend unit tests. `npm test` runs frontend tests. CI builds/tests both without OAuth or live model credentials.
+Backend unit tests:
 
-The frontend production bundle is built with `npm run build`. Browser verification requires a running backend and legitimate, authorized accounts for each role; do not reset passwords or create records in an existing environment merely to test it.
+```powershell
+cd backend
+mvn -B test
+```
 
-## Core HRMS APIs
+Frontend tests and production build:
 
-- `GET/POST/PUT/DELETE /api/departments` — HR department administration; deletion is refused while employees are assigned.
-- `GET/POST/PUT /api/employees` — admin-managed employee/manager assignment; profile retrieval enforces ownership and direct-report access.
-- `GET/POST/PUT /api/leave-types` and `GET/PUT /api/leave-balances` — leave configuration and admin-only entitlement upsert. An upsert locks the employee/leave-type balance, applies only the required delta, and writes an immutable adjustment transaction with an admin-supplied reason.
-- `POST /api/leaves`, `PUT /api/leaves/{id}/approve|reject|cancel` — workflow routes with manager/team authorization and balance accounting.
-- `POST /api/ai/policies` and `POST /api/ai/policies/{id}/reindex` — admin-only PDF ingestion and idempotent policy-index repair; `POST /api/ai/chat` and `/api/ai/conversations/**` — authenticated cited policy chat and private history.
-- `GET /api/leave-balances/history`, `GET /api/notifications`, `GET /api/notifications/unread-count`, `PUT /api/notifications/{id}/read`, and paginated `GET /api/audit-logs`.
+```powershell
+cd frontend
+npm test
+npm run build
+```
 
-Swagger is available at `/swagger-ui.html`. API error bodies use a consistent `timestamp`, `status`, `error`, `message`, and `fields` contract.
+The test suite covers leave-date/workday rules, balances and duplicate approval protection, cancellation restoration, direct-manager authorization, AI evidence/citation handling, authenticated history/holiday lookups, conversation ownership, confirmation idempotency, and absence of an LLM leave-submission tool. These are not live MySQL, ChromaDB, Ollama, Docker, or Testcontainers integration tests.
 
-## DTO and security strategy
+GitHub Actions runs the same verification paths on pushes and pull requests: backend `mvn -B test` on Java 21, plus frontend `npm install` and `npm test && npm run build` on Node.js 22. The workflow is defined in `.github/workflows/ci.yml`.
 
-The API DTO catalog lives under `common/dto`; new notification, department, audit, and balance endpoints return DTOs instead of JPA objects. Entitlements, department administration, and audit retrieval are admin-only. Employee-owned routes derive the employee from the JWT principal; manager routes check direct-manager assignment. Password hashes remain JSON-hidden in the entity, and response DTOs never carry password fields.
+## Future improvements
 
-## Database verification status
+- Add automated end-to-end coverage against disposable MySQL, Ollama, and ChromaDB services.
+- Validate and document a supported containerized ChromaDB version for production-like RAG.
+- Add optional operational observability and deployment guidance after environment-specific verification.
 
-The service uses only the `aiemployeeleavemanagementsystem` database. Its JDBC default includes `createDatabaseIfNotExist=true` for local users with database-create permission; Docker Compose also provisions this exact name, and `database/schema.sql` creates its tables there. The existing `employeeleavemanagementsystem` database is intentionally never read, modified, overwritten, or deleted. The service uses JPA transactional boundaries, a pessimistic balance-row lock, optimistic version columns, and immutable per-leave accounting entries: one approval debit and, where eligible, one cancellation credit. Unit tests cover duplicate debit prevention, insufficient-balance behavior, and cancellation restoration.
+## Author
 
-When validating an existing deployment, supply a restricted database account, keep Hibernate on `validate`, disable Flyway unless a reviewed migration is explicitly approved, and disable seed administration. Take and verify a recoverable backup before any workflow that writes test data. Never run `database/schema.sql` against an existing deployment.
-
-## OAuth and AI setup
-
-Set Google credentials and configure the callback `/login/oauth2/code/google` in Google Cloud before testing OAuth. Start Ollama, pull `llama3.2` and `nomic-embed-text`, then configure the supplied environment variables. These external integrations are not verified in this workspace.
-
-For AI policy ingestion, start ChromaDB at `CHROMA_URL` (default `http://127.0.0.1:8001`) and upload PDF documents from the admin Policy documents page. `POLICY_MAX_FILE_SIZE` and `POLICY_MAX_REQUEST_SIZE` control multipart limits. The backend keeps policy chunks and chat history in MySQL while ChromaDB stores vectors; conversation access is restricted to the authenticated user.
+- GitHub: [student-mahesh](https://github.com/student-mahesh)
+- Repository: [ai-powered-employee-leave-management-system](https://github.com/student-mahesh/ai-powered-employee-leave-management-system)
+- LinkedIn: No verified profile URL is present in the repository; add the author's confirmed profile link before publishing it here.
